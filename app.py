@@ -2,12 +2,12 @@ import streamlit as st
 import os
 import tempfile
 from langchain_community.document_loaders import PyPDFLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_community.vectorstores import FAISS
 from langchain.chains import RetrievalQA
 
-# Настройки страницы
+# --- НАСТРОЙКИ СТРАНИЦЫ ---
 st.set_page_config(page_title="CRIMSONTEK AI", page_icon="🔴", layout="wide")
 
 # Дизайн
@@ -19,7 +19,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("🔴 CRIMSONTEK: Industrial Analyst")
-st.caption("System v1.0")
+st.caption("System v1.0 (Patched)")
 
 # Боковая панель
 with st.sidebar:
@@ -30,7 +30,7 @@ with st.sidebar:
 
 if api_key:
     os.environ["OPENAI_API_KEY"] = api_key
-
+    
     # Загрузка файла
     uploaded_file = st.file_uploader("Upload PDF", type="pdf")
 
@@ -40,29 +40,29 @@ if api_key:
             tmp_path = tmp.name
 
         st.info("System process: Analyzing...")
-
+        
         try:
             # Чтение и анализ
             loader = PyPDFLoader(tmp_path)
             documents = loader.load()
-
+            
             text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
             texts = text_splitter.split_documents(documents)
-
+            
             embeddings = OpenAIEmbeddings()
             vectorstore = FAISS.from_documents(texts, embeddings)
-
+            
             qa = RetrievalQA.from_chain_type(
                 llm=ChatOpenAI(model="gpt-4o-mini"),
                 chain_type="stuff",
                 retriever=vectorstore.as_retriever()
             )
-
+            
             st.success("Ready.")
-
+            
             # Чат
             query = st.chat_input("Enter command...")
-
+            
             if "messages" not in st.session_state:
                 st.session_state.messages = []
 
@@ -80,6 +80,6 @@ if api_key:
                         res = qa.invoke(query)
                         st.write(res['result'])
                         st.session_state.messages.append({"role": "assistant", "content": res['result']})
-
+                    
         except Exception as e:
             st.error(f"Error: {e}")
